@@ -4,7 +4,7 @@
 
 Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, generates clean file trees, and provides useful metadata.
 
-> Status: Early development
+> Status: Early development · Written in Go
 
 ---
 
@@ -40,12 +40,33 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 
 ---
 
-## Tech Direction
+## Development
 
-- **Language**: TypeScript (Node.js) or Go — final decision pending
-- Clean architecture with clear separation of concerns
-- Solid test coverage
-- Good documentation and examples
+### Requirements
+- Go 1.22+
+
+### Build
+```bash
+go build -o ctx-pack ./cmd/ctx-pack
+```
+
+### Run
+```bash
+./ctx-pack --version
+```
+
+---
+
+## Project Structure
+
+```
+ctx-pack/
+├── cmd/
+│   └── ctx-pack/       # Entry point
+├── internal/           # Private packages (coming soon)
+├── go.mod
+└── README.md
+```
 
 ---
 
