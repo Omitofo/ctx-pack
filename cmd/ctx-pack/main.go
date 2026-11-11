@@ -32,23 +32,62 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *showHelp || flag.NArg() == 0 {
+	if *showHelp {
 		printHelp()
 		os.Exit(0)
+	}
+
+	if flag.NArg() == 0 {
+		fmt.Fprintln(os.Stderr, "error: missing directory argument")
+		fmt.Fprintln(os.Stderr, "\nUsage: ctx-pack [flags] <directory>")
+		fmt.Fprintln(os.Stderr, "Run 'ctx-pack --help' for more information.")
+		os.Exit(1)
+	}
+
+	if flag.NArg() > 1 {
+		fmt.Fprintln(os.Stderr, "error: too many arguments (only one directory is supported)")
+		os.Exit(1)
 	}
 
 	root := flag.Arg(0)
 	formatName := strings.ToLower(strings.TrimSpace(*format))
 
 	if formatName != "markdown" && formatName != "json" {
-		fmt.Fprintf(os.Stderr, "error: unsupported format %q (use markdown or json)\n", *format)
+		fmt.Fprintf(os.Stderr, "error: unsupported format %q (supported: markdown, json)\n", *format)
 		os.Exit(1)
 	}
 
-	// Safety: resolve to absolute path early
+	if *maxFiles < 0 {
+		fmt.Fprintln(os.Stderr, "error: --max-files cannot be negative")
+		os.Exit(1)
+	}
+	if *maxDepth < 0 {
+		fmt.Fprintln(os.Stderr, "error: --max-depth cannot be negative")
+		os.Exit(1)
+	}
+	if *maxFileSize < 0 {
+		fmt.Fprintln(os.Stderr, "error: --max-file-size cannot be negative")
+		os.Exit(1)
+	}
+
+	// Resolve to absolute path early
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: cannot resolve path: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: cannot resolve path %q: %v\n", root, err)
+		os.Exit(1)
+	}
+
+	info, err := os.Stat(absRoot)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "error: path does not exist: %s\n", absRoot)
+		} else {
+			fmt.Fprintf(os.Stderr, "error: cannot access %s: %v\n", absRoot, err)
+		}
+		os.Exit(1)
+	}
+	if !info.IsDir() {
+		fmt.Fprintf(os.Stderr, "error: path is not a directory: %s\n", absRoot)
 		os.Exit(1)
 	}
 
@@ -62,7 +101,7 @@ func main() {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "Scanning: %s\n", absRoot)
+	fmt.Fprintf(os.Stderr, "→ Scanning %s\n", absRoot)
 
 	result, err := pack.Pack(pack.Options{
 		Root:           absRoot,
@@ -74,9 +113,26 @@ func main() {
 		IncludeContent: true,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: failed to pack directory: %v\n", err)
 		os.Exit(1)
 	}
+
+	if len(result.Files) == 0 {
+		fmt.Fprintln(os.Stderr, "warning: no files found (check ignore rules or path)")
+	}
+
+	// Summary on stderr so it doesn't pollute the output
+	fmt.Fprintf(os.Stderr, "→ Found %d files", len(result.Files))
+	if result.TotalTokens > 0 {
+		fmt.Fprintf(os.Stderr, " (~%d tokens)", result.TotalTokens)
+	}
+	if result.Skipped > 0 {
+		fmt.Fprintf(os.Stderr, ", skipped %d", result.Skipped)
+	}
+	if result.Truncated {
+		fmt.Fprint(os.Stderr, " [truncated]")
+	}
+	fmt.Fprintln(os.Stderr)
 
 	var output string
 
@@ -84,7 +140,7 @@ func main() {
 	case "json":
 		output, err = pack.ToJSON(result)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: failed to generate JSON: %v\n", err)
 			os.Exit(1)
 		}
 	default:
@@ -94,10 +150,10 @@ func main() {
 	if *outputFile != "" {
 		err := os.WriteFile(*outputFile, []byte(output), 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error writing output: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error: failed to write %s: %v\n", *outputFile, err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "Wrote %s (%d files, ~%d tokens)\n", *outputFile, len(result.Files), result.TotalTokens)
+		fmt.Fprintf(os.Stderr, "→ Wrote %s\n", *outputFile)
 	} else {
 		fmt.Print(output)
 	}
@@ -125,5 +181,6 @@ Notes:
   - Read-only: never modifies any files in the scanned directory
   - Does not follow symlinks by default
   - Skips binary files and files larger than --max-file-size
-  - Supports markdown (default) and json output formats`)
+  - Supports markdown (default) and json output formats
+  - Progress and summary messages go to stderr; content goes to stdout (or --output)`)
 }
