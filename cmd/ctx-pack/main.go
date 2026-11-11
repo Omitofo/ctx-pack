@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Omitofo/ctx-pack/internal/walker"
 )
@@ -18,6 +19,7 @@ func main() {
 		maxDepth       = flag.Int("max-depth", 0, "Maximum directory depth (0 = unlimited)")
 		maxFiles       = flag.Int("max-files", 5000, "Maximum number of files to include (safety limit)")
 		followSymlinks = flag.Bool("follow-symlinks", false, "Follow symbolic links (disabled by default for safety)")
+		ignoreList     = flag.String("ignore", "", "Additional gitignore-style patterns (comma-separated)")
 	)
 
 	flag.Parse()
@@ -41,11 +43,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	var extraIgnores []string
+	if *ignoreList != "" {
+		for _, p := range strings.Split(*ignoreList, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				extraIgnores = append(extraIgnores, p)
+			}
+		}
+	}
+
 	fmt.Printf("Scanning: %s\n", absRoot)
 	if *maxDepth > 0 {
 		fmt.Printf("Max depth: %d\n", *maxDepth)
 	}
 	fmt.Printf("Max files: %d\n", *maxFiles)
+	if len(extraIgnores) > 0 {
+		fmt.Printf("Extra ignores: %v\n", extraIgnores)
+	}
 	fmt.Println()
 
 	result, err := walker.Walk(walker.Options{
@@ -53,6 +68,7 @@ func main() {
 		MaxDepth:       *maxDepth,
 		MaxFiles:       *maxFiles,
 		FollowSymlinks: *followSymlinks,
+		IgnorePatterns: extraIgnores,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -84,11 +100,13 @@ Examples:
   ctx-pack .
   ctx-pack ./my-project
   ctx-pack --max-depth 3 --max-files 1000 ./src
+  ctx-pack --ignore "dist,*.log,tmp/*" .
 
 Flags:`)
 	flag.PrintDefaults()
 	fmt.Println(`
-Safety notes:
+Notes:
+  - Automatically respects .gitignore in the target directory
   - Read-only: never modifies any files
   - Does not follow symlinks by default
   - Has file and depth limits to prevent runaway scans`)
