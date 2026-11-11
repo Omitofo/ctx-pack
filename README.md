@@ -8,6 +8,27 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 
 ---
 
+## Current Capabilities
+
+- Safe recursive directory walking
+- Read-only (never modifies anything)
+- Does **not** follow symlinks by default
+- Configurable depth and file count limits (safety)
+- Basic CLI with flags
+
+```bash
+# Build
+go build -o ctx-pack ./cmd/ctx-pack
+
+# Examples
+./ctx-pack .
+./ctx-pack --max-depth 3 --max-files 1000 ./my-project
+./ctx-pack --version
+./ctx-pack --help
+```
+
+---
+
 ## Vision
 
 `ctx-pack` aims to be a small, reliable, and delightful tool for preparing context for AI systems. It should feel intentional, fast, and well-engineered.
@@ -21,39 +42,33 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 
 ---
 
-## Planned Features
+## Roadmap
 
-### MVP
-- Recursive directory walking
-- Full `.gitignore` support
-- Custom ignore patterns
-- Clean file tree generation
-- File content inclusion with size limits
-- Markdown output
+### Done
+- [x] Basic CLI
+- [x] Safe directory walker (no symlink following by default)
+- [x] Safety limits (max depth, max files)
+
+### Next
+- [ ] `.gitignore` support
+- [ ] Custom ignore patterns
+- [ ] Clean file tree + content output (Markdown)
+- [ ] Max file size limit
+- [ ] Binary file detection
 
 ### Later
 - Approximate token counting
 - JSON output mode
-- Configurable depth and file size limits
-- Smart binary file detection
-- Optional file summaries
+- Better formatting / tree view
 
 ---
 
-## Development
+## Safety Principles
 
-### Requirements
-- Go 1.22+
-
-### Build
-```bash
-go build -o ctx-pack ./cmd/ctx-pack
-```
-
-### Run
-```bash
-./ctx-pack --version
-```
+- **Read-only**: Never writes or modifies any files
+- **No symlink following** by default
+- Hard limits on depth and number of files
+- Clear error messages
 
 ---
 
@@ -61,10 +76,11 @@ go build -o ctx-pack ./cmd/ctx-pack
 
 ```
 ctx-pack/
-├── cmd/
-│   └── ctx-pack/       # Entry point
-├── internal/           # Private packages (coming soon)
+├── cmd/ctx-pack/         # CLI entry point
+├── internal/
+│   └── walker/           # Safe directory walking
 ├── go.mod
+├── Makefile
 └── README.md
 ```
 
@@ -73,7 +89,3 @@ ctx-pack/
 ## License
 
 MIT (planned)
-
----
-
-This project lives under the [engineering-sketches](https://github.com/Omitofo/engineering-sketches) collection.
