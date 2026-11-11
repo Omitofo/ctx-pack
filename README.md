@@ -2,7 +2,7 @@
 
 **CLI tool that packages a folder into clean, structured context for LLMs.**
 
-Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, estimates tokens, and outputs clean Markdown or JSON.
+Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore` and `.ctxignore`, supports custom ignore rules, skips binaries, estimates tokens, and outputs clean Markdown or JSON.
 
 > Status: Early development · Written in Go
 
@@ -11,7 +11,7 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 ## Current Capabilities
 
 - Safe recursive directory walking
-- Respects `.gitignore` automatically
+- Respects `.gitignore` and **`.ctxignore`** automatically
 - Extra ignore patterns via `--ignore`
 - Skips binary files
 - Skips files larger than a configurable size (default 64KB)
@@ -40,6 +40,14 @@ go build -o ctx-pack ./cmd/ctx-pack
 ./ctx-pack --ignore "dist,*.log,tmp/*" .
 ```
 
+### Ignore files
+
+`ctx-pack` automatically loads ignore patterns from:
+
+1. `.gitignore` (if present)
+2. `.ctxignore` (if present) — use this for context-specific exclusions without touching your main `.gitignore`
+3. Patterns passed via `--ignore`
+
 ---
 
 ## Vision
@@ -55,6 +63,7 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Safe directory walker
 - [x] Safety limits (depth, files, file size)
 - [x] `.gitignore` support
+- [x] `.ctxignore` support
 - [x] Custom ignore patterns
 - [x] Binary file detection
 - [x] Markdown output (tree + contents)
@@ -63,7 +72,6 @@ go build -o ctx-pack ./cmd/ctx-pack
 
 ### Next
 - [ ] Better tree formatting
-- [ ] `.ctxignore` support (in addition to `.gitignore`)
 
 ---
 
@@ -83,7 +91,7 @@ go build -o ctx-pack ./cmd/ctx-pack
 ctx-pack/
 ├── cmd/ctx-pack/          # CLI entry point
 ├── internal/
-│   ├── walker/            # Safe walking + gitignore
+│   ├── walker/            # Safe walking + gitignore + ctxignore
 │   └── pack/              # Content reading + Markdown/JSON + tokens
 ├── go.mod
 ├── Makefile
