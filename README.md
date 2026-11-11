@@ -2,7 +2,7 @@
 
 **CLI tool that packages a folder into clean, structured context for LLMs.**
 
-Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, and outputs clean Markdown.
+Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, estimates tokens, and outputs clean Markdown.
 
 > Status: Early development · Written in Go
 
@@ -15,6 +15,7 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 - Extra ignore patterns via `--ignore`
 - Skips binary files
 - Skips files larger than a configurable size (default 64KB)
+- **Approximate token counting** (total + per file)
 - Generates clean **Markdown** output (tree + file contents)
 - Read-only (never modifies the scanned directory)
 - Does **not** follow symlinks by default
@@ -55,10 +56,10 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Custom ignore patterns
 - [x] Binary file detection
 - [x] Markdown output (tree + contents)
+- [x] Approximate token counting
 
 ### Next
 - [ ] Better tree formatting
-- [ ] Approximate token counting
 - [ ] JSON output mode
 - [ ] `.ctxignore` support (in addition to `.gitignore`)
 
@@ -81,7 +82,7 @@ ctx-pack/
 ├── cmd/ctx-pack/          # CLI entry point
 ├── internal/
 │   ├── walker/            # Safe walking + gitignore
-│   └── pack/              # Content reading + Markdown generation
+│   └── pack/              # Content reading + Markdown + tokens
 ├── go.mod
 ├── Makefile
 └── README.md
