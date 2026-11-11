@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Omitofo/ctx-pack/internal/walker"
+	"github.com/Omitofo/ctx-pack/internal/pack"
 )
 
 const version = "0.1.0"
@@ -17,9 +17,11 @@ func main() {
 		showVersion    = flag.Bool("version", false, "Print version and exit")
 		showHelp       = flag.Bool("help", false, "Show help")
 		maxDepth       = flag.Int("max-depth", 0, "Maximum directory depth (0 = unlimited)")
-		maxFiles       = flag.Int("max-files", 5000, "Maximum number of files to include (safety limit)")
+		maxFiles       = flag.Int("max-files", 2000, "Maximum number of files to include (safety limit)")
+		maxFileSize    = flag.Int64("max-file-size", 64*1024, "Maximum file size in bytes to include content (default 64KB)")
 		followSymlinks = flag.Bool("follow-symlinks", false, "Follow symbolic links (disabled by default for safety)")
 		ignoreList     = flag.String("ignore", "", "Additional gitignore-style patterns (comma-separated)")
+		outputFile     = flag.String("output", "", "Write Markdown to this file instead of stdout")
 	)
 
 	flag.Parse()
@@ -53,40 +55,33 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Scanning: %s\n", absRoot)
-	if *maxDepth > 0 {
-		fmt.Printf("Max depth: %d\n", *maxDepth)
-	}
-	fmt.Printf("Max files: %d\n", *maxFiles)
-	if len(extraIgnores) > 0 {
-		fmt.Printf("Extra ignores: %v\n", extraIgnores)
-	}
-	fmt.Println()
+	fmt.Fprintf(os.Stderr, "Scanning: %s\n", absRoot)
 
-	result, err := walker.Walk(walker.Options{
+	result, err := pack.Pack(pack.Options{
 		Root:           absRoot,
 		MaxDepth:       *maxDepth,
 		MaxFiles:       *maxFiles,
+		MaxFileSize:    *maxFileSize,
 		FollowSymlinks: *followSymlinks,
 		IgnorePatterns: extraIgnores,
+		IncludeContent: true,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Directories: %d\n", len(result.Dirs))
-	fmt.Printf("Files:       %d\n", len(result.Files))
-	if result.Skipped > 0 {
-		fmt.Printf("Skipped:     %d\n", result.Skipped)
-	}
-	if result.Truncated {
-		fmt.Println("\n⚠️  Result was truncated due to safety limits.")
-	}
+	md := pack.ToMarkdown(result)
 
-	fmt.Println("\nFile tree (relative):")
-	for _, f := range result.Files {
-		fmt.Printf("  %s\n", f)
+	if *outputFile != "" {
+		err := os.WriteFile(*outputFile, []byte(md), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error writing output: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "Wrote %s (%d files)\n", *outputFile, len(result.Files))
+	} else {
+		fmt.Print(md)
 	}
 }
 
@@ -99,15 +94,16 @@ Usage:
 Examples:
   ctx-pack .
   ctx-pack ./my-project
-  ctx-pack --max-depth 3 --max-files 1000 ./src
-  ctx-pack --ignore "dist,*.log,tmp/*" .
+  ctx-pack --max-depth 3 --max-files 500 ./src
+  ctx-pack --ignore "dist,*.log" --output context.md .
 
 Flags:`)
 	flag.PrintDefaults()
 	fmt.Println(`
 Notes:
   - Automatically respects .gitignore in the target directory
-  - Read-only: never modifies any files
+  - Read-only: never modifies any files in the scanned directory
   - Does not follow symlinks by default
-  - Has file and depth limits to prevent runaway scans`)
+  - Skips binary files and files larger than --max-file-size
+  - Output is Markdown (to stdout or --output file)`)
 }
