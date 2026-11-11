@@ -120,7 +120,8 @@ Flags:`)
 	flag.PrintDefaults()
 	fmt.Println(`
 Notes:
-  - Automatically respects .gitignore in the target directory
+  - Automatically respects .gitignore and .ctxignore in the target directory
+  - Use .ctxignore for context-specific exclusions without touching .gitignore
   - Read-only: never modifies any files in the scanned directory
   - Does not follow symlinks by default
   - Skips binary files and files larger than --max-file-size
