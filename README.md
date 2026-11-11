@@ -16,6 +16,7 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 - Skips binary files
 - Skips files larger than a configurable size (default 64KB)
 - Approximate token counting (total + per file)
+- Hierarchical file tree in Markdown output
 - **Markdown** and **JSON** output formats
 - Read-only (never modifies the scanned directory)
 - Does **not** follow symlinks by default
@@ -69,9 +70,10 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Markdown output (tree + contents)
 - [x] Approximate token counting
 - [x] JSON output mode
+- [x] Hierarchical tree formatting
 
 ### Next
-- [ ] Better tree formatting
+- Polish: tests, LICENSE, better error messages, version bump
 
 ---
 
@@ -92,7 +94,7 @@ ctx-pack/
 ├── cmd/ctx-pack/          # CLI entry point
 ├── internal/
 │   ├── walker/            # Safe walking + gitignore + ctxignore
-│   └── pack/              # Content reading + Markdown/JSON + tokens
+│   └── pack/              # Content reading + Markdown/JSON + tokens + tree
 ├── go.mod
 ├── Makefile
 └── README.md
