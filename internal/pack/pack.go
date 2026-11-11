@@ -12,13 +12,13 @@ import (
 
 // Options for packing.
 type Options struct {
-	Root            string
-	MaxDepth        int
-	MaxFiles        int
-	MaxFileSize     int64 // bytes. 0 = default (64KB)
-	FollowSymlinks  bool
-	IgnorePatterns  []string
-	IncludeContent  bool
+	Root           string
+	MaxDepth       int
+	MaxFiles       int
+	MaxFileSize    int64 // bytes. 0 = default (64KB)
+	FollowSymlinks bool
+	IgnorePatterns []string
+	IncludeContent bool
 }
 
 // FileEntry represents one file in the pack result.
@@ -27,16 +27,18 @@ type FileEntry struct {
 	Size    int64
 	Content string // empty if binary or too large
 	Binary  bool
-	Skipped bool // true if content was skipped (too large / binary)
+	Skipped bool   // true if content was skipped (too large / binary)
+	Tokens  int    // approximate token count
 }
 
 // Result is the full pack output.
 type Result struct {
-	Root      string
-	Files     []FileEntry
-	Dirs      []string
-	Skipped   int
-	Truncated bool
+	Root         string
+	Files        []FileEntry
+	Dirs         []string
+	Skipped      int
+	Truncated    bool
+	TotalTokens  int
 }
 
 // Pack walks the directory and optionally reads file contents.
@@ -95,7 +97,7 @@ func Pack(opts Options) (*Result, error) {
 			continue
 		}
 
-		// Simple binary detection: contains null byte or invalid UTF-8
+		// Simple binary detection
 		if isBinary(data) {
 			entry.Binary = true
 			entry.Skipped = true
@@ -104,10 +106,22 @@ func Pack(opts Options) (*Result, error) {
 		}
 
 		entry.Content = string(data)
+		entry.Tokens = estimateTokens(entry.Content)
+		result.TotalTokens += entry.Tokens
 		result.Files = append(result.Files, entry)
 	}
 
 	return result, nil
+}
+
+// estimateTokens provides a reasonable approximation.
+// Real tokenizers vary, but chars/4 is a widely used rough estimate for English/code.
+func estimateTokens(text string) int {
+	if text == "" {
+		return 0
+	}
+	// +3/4 so it rounds up
+	return (len(text) + 3) / 4
 }
 
 // isBinary uses a simple heuristic.
@@ -115,11 +129,9 @@ func isBinary(data []byte) bool {
 	if len(data) == 0 {
 		return false
 	}
-	// Null byte is a strong indicator
 	if strings.Contains(string(data), "\x00") {
 		return true
 	}
-	// Invalid UTF-8
 	return !utf8.Valid(data)
 }
 
@@ -131,24 +143,28 @@ func ToMarkdown(r *Result) string {
 	b.WriteString(fmt.Sprintf("**Root:** `%s`\n\n", r.Root))
 	b.WriteString(fmt.Sprintf("- Directories: %d\n", len(r.Dirs)))
 	b.WriteString(fmt.Sprintf("- Files: %d\n", len(r.Files)))
+	b.WriteString(fmt.Sprintf("- Estimated tokens: **%d**\n", r.TotalTokens))
 	if r.Skipped > 0 {
 		b.WriteString(fmt.Sprintf("- Skipped: %d\n", r.Skipped))
 	}
 	if r.Truncated {
 		b.WriteString("- **Truncated** due to safety limits\n")
 	}
-	b.WriteString("\n---\n\n")
+	b.WriteString("\n> Token count is an approximation (≈ characters / 4).\n\n")
+	b.WriteString("---\n\n")
 
 	// File tree
 	b.WriteString("## File Tree\n\n```\n")
 	for _, f := range r.Files {
-		b.WriteString(f.Path)
+		line := f.Path
 		if f.Binary {
-			b.WriteString("  (binary)")
+			line += "  (binary)"
 		} else if f.Skipped {
-			b.WriteString("  (skipped - too large)")
+			line += "  (skipped - too large)"
+		} else if f.Tokens > 0 {
+			line += fmt.Sprintf("  (~%d tokens)", f.Tokens)
 		}
-		b.WriteString("\n")
+		b.WriteString(line + "\n")
 	}
 	b.WriteString("```\n\n")
 
@@ -160,6 +176,7 @@ func ToMarkdown(r *Result) string {
 		}
 
 		b.WriteString(fmt.Sprintf("### `%s`\n\n", f.Path))
+		b.WriteString(fmt.Sprintf("_≈ %d tokens_\n\n", f.Tokens))
 		b.WriteString("```" + detectLang(f.Path) + "\n")
 		b.WriteString(f.Content)
 		if !strings.HasSuffix(f.Content, "\n") {
