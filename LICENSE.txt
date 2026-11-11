@@ -1,0 +1,35 @@
+Copyright (c) 2026 Omitofo (HR)
+All Rights Reserved.
+
+This software and its source code ("the Software") are the exclusive property
+of the copyright holder.
+
+PERMISSIONS
+
+You are granted a free, non-exclusive, non-transferable license to use the
+Software for personal, non-commercial purposes only.
+
+RESTRICTIONS
+
+You may NOT:
+
+1. Modify the Software or create derivative works based on it.
+2. Redistribute, publish, share, or make the Software available to others
+   in any form (source or binary).
+3. Sell, sublicense, rent, lease, or otherwise commercially exploit the
+   Software.
+4. Use the Software for any commercial purpose.
+
+The copyright holder retains all rights, title, and interest in and to the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF,
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+For any other use (including commercial use, modification, or redistribution),
+please contact the copyright holder to request a separate license.
