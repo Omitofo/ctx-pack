@@ -21,7 +21,8 @@ func main() {
 		maxFileSize    = flag.Int64("max-file-size", 64*1024, "Maximum file size in bytes to include content (default 64KB)")
 		followSymlinks = flag.Bool("follow-symlinks", false, "Follow symbolic links (disabled by default for safety)")
 		ignoreList     = flag.String("ignore", "", "Additional gitignore-style patterns (comma-separated)")
-		outputFile     = flag.String("output", "", "Write Markdown to this file instead of stdout")
+		outputFile     = flag.String("output", "", "Write output to this file instead of stdout")
+		format         = flag.String("format", "markdown", "Output format: markdown | json")
 	)
 
 	flag.Parse()
@@ -37,6 +38,12 @@ func main() {
 	}
 
 	root := flag.Arg(0)
+	formatName := strings.ToLower(strings.TrimSpace(*format))
+
+	if formatName != "markdown" && formatName != "json" {
+		fmt.Fprintf(os.Stderr, "error: unsupported format %q (use markdown or json)\n", *format)
+		os.Exit(1)
+	}
 
 	// Safety: resolve to absolute path early
 	absRoot, err := filepath.Abs(root)
@@ -71,17 +78,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	md := pack.ToMarkdown(result)
+	var output string
+
+	switch formatName {
+	case "json":
+		output, err = pack.ToJSON(result)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+	default:
+		output = pack.ToMarkdown(result)
+	}
 
 	if *outputFile != "" {
-		err := os.WriteFile(*outputFile, []byte(md), 0644)
+		err := os.WriteFile(*outputFile, []byte(output), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error writing output: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "Wrote %s (%d files)\n", *outputFile, len(result.Files))
+		fmt.Fprintf(os.Stderr, "Wrote %s (%d files, ~%d tokens)\n", *outputFile, len(result.Files), result.TotalTokens)
 	} else {
-		fmt.Print(md)
+		fmt.Print(output)
 	}
 }
 
@@ -93,7 +111,8 @@ Usage:
 
 Examples:
   ctx-pack .
-  ctx-pack ./my-project
+  ctx-pack --format json .
+  ctx-pack --format json --output context.json .
   ctx-pack --max-depth 3 --max-files 500 ./src
   ctx-pack --ignore "dist,*.log" --output context.md .
 
@@ -105,5 +124,5 @@ Notes:
   - Read-only: never modifies any files in the scanned directory
   - Does not follow symlinks by default
   - Skips binary files and files larger than --max-file-size
-  - Output is Markdown (to stdout or --output file)`)
+  - Supports markdown (default) and json output formats`)
 }
