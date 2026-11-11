@@ -6,6 +6,8 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 
 > Status: Early development · Written in Go
 
+**New to this?** → Read the simple [Beginner Guide](GUIDE.md)
+
 ---
 
 ## Current Capabilities
@@ -77,6 +79,7 @@ make test
 - [x] Hierarchical tree formatting
 - [x] Basic tests
 - [x] Improved error messages & UX feedback
+- [x] Beginner-friendly guide
 
 ### Next
 - LICENSE (MIT)
@@ -104,6 +107,7 @@ ctx-pack/
 │   └── pack/              # Content reading + Markdown/JSON + tokens + tree
 ├── go.mod
 ├── Makefile
+├── GUIDE.md               # Beginner guide
 └── README.md
 ```
 
