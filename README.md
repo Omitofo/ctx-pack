@@ -80,9 +80,9 @@ make test
 - [x] Basic tests
 - [x] Improved error messages & UX feedback
 - [x] Beginner-friendly guide
+- [x] License
 
 ### Next
-- LICENSE (MIT)
 - Version bump / release readiness
 
 ---
@@ -108,6 +108,7 @@ ctx-pack/
 ├── go.mod
 ├── Makefile
 ├── GUIDE.md               # Beginner guide
+├── LICENSE.txt
 └── README.md
 ```
 
@@ -115,4 +116,9 @@ ctx-pack/
 
 ## License
 
-MIT (planned)
+Copyright (c) 2026 Omitofo (HR). All Rights Reserved.
+
+Free for **personal, non-commercial use** only.  
+Modification, redistribution, and commercial use are **not permitted**.
+
+See [LICENSE.txt](LICENSE.txt) for the full terms.
