@@ -1,6 +1,7 @@
 package pack
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,22 +24,22 @@ type Options struct {
 
 // FileEntry represents one file in the pack result.
 type FileEntry struct {
-	Path    string
-	Size    int64
-	Content string // empty if binary or too large
-	Binary  bool
-	Skipped bool   // true if content was skipped (too large / binary)
-	Tokens  int    // approximate token count
+	Path    string `json:"path"`
+	Size    int64  `json:"size"`
+	Content string `json:"content,omitempty"`
+	Binary  bool   `json:"binary,omitempty"`
+	Skipped bool   `json:"skipped,omitempty"`
+	Tokens  int    `json:"tokens,omitempty"`
 }
 
 // Result is the full pack output.
 type Result struct {
-	Root         string
-	Files        []FileEntry
-	Dirs         []string
-	Skipped      int
-	Truncated    bool
-	TotalTokens  int
+	Root        string      `json:"root"`
+	Files       []FileEntry `json:"files"`
+	Dirs        []string    `json:"dirs,omitempty"`
+	Skipped     int         `json:"skipped"`
+	Truncated   bool        `json:"truncated,omitempty"`
+	TotalTokens int         `json:"total_tokens"`
 }
 
 // Pack walks the directory and optionally reads file contents.
@@ -186,6 +187,15 @@ func ToMarkdown(r *Result) string {
 	}
 
 	return b.String()
+}
+
+// ToJSON generates a pretty-printed JSON representation.
+func ToJSON(r *Result) (string, error) {
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal json: %w", err)
+	}
+	return string(data) + "\n", nil
 }
 
 // detectLang returns a markdown language hint based on extension.
