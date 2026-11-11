@@ -2,7 +2,7 @@
 
 **CLI tool that packages a folder into clean, structured context for LLMs.**
 
-Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, estimates tokens, and outputs clean Markdown.
+Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, estimates tokens, and outputs clean Markdown or JSON.
 
 > Status: Early development · Written in Go
 
@@ -15,8 +15,8 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 - Extra ignore patterns via `--ignore`
 - Skips binary files
 - Skips files larger than a configurable size (default 64KB)
-- **Approximate token counting** (total + per file)
-- Generates clean **Markdown** output (tree + file contents)
+- Approximate token counting (total + per file)
+- **Markdown** and **JSON** output formats
 - Read-only (never modifies the scanned directory)
 - Does **not** follow symlinks by default
 - Configurable safety limits
@@ -25,11 +25,13 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 # Build
 go build -o ctx-pack ./cmd/ctx-pack
 
-# Basic usage (prints Markdown to stdout)
+# Markdown (default)
 ./ctx-pack .
-
-# Save to file
 ./ctx-pack --output context.md .
+
+# JSON
+./ctx-pack --format json .
+./ctx-pack --format json --output context.json .
 
 # With limits
 ./ctx-pack --max-depth 4 --max-files 300 --max-file-size 32768 ./src
@@ -57,10 +59,10 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Binary file detection
 - [x] Markdown output (tree + contents)
 - [x] Approximate token counting
+- [x] JSON output mode
 
 ### Next
 - [ ] Better tree formatting
-- [ ] JSON output mode
 - [ ] `.ctxignore` support (in addition to `.gitignore`)
 
 ---
@@ -82,7 +84,7 @@ ctx-pack/
 ├── cmd/ctx-pack/          # CLI entry point
 ├── internal/
 │   ├── walker/            # Safe walking + gitignore
-│   └── pack/              # Content reading + Markdown + tokens
+│   └── pack/              # Content reading + Markdown/JSON + tokens
 ├── go.mod
 ├── Makefile
 └── README.md
