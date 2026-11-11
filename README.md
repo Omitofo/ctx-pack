@@ -2,7 +2,7 @@
 
 **CLI tool that packages a folder into clean, structured context for LLMs.**
 
-Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, generates clean file trees, and provides useful metadata.
+Turn any project directory into high-quality, ready-to-use context. Respects `.gitignore`, supports custom ignore rules, skips binaries, and outputs clean Markdown.
 
 > Status: Early development · Written in Go
 
@@ -11,22 +11,30 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 ## Current Capabilities
 
 - Safe recursive directory walking
-- **Respects `.gitignore`** automatically
+- Respects `.gitignore` automatically
 - Extra ignore patterns via `--ignore`
-- Read-only (never modifies anything)
+- Skips binary files
+- Skips files larger than a configurable size (default 64KB)
+- Generates clean **Markdown** output (tree + file contents)
+- Read-only (never modifies the scanned directory)
 - Does **not** follow symlinks by default
-- Configurable depth and file count limits (safety)
+- Configurable safety limits
 
 ```bash
 # Build
 go build -o ctx-pack ./cmd/ctx-pack
 
-# Examples
+# Basic usage (prints Markdown to stdout)
 ./ctx-pack .
-./ctx-pack --max-depth 3 --max-files 1000 ./my-project
+
+# Save to file
+./ctx-pack --output context.md .
+
+# With limits
+./ctx-pack --max-depth 4 --max-files 300 --max-file-size 32768 ./src
+
+# Extra ignores
 ./ctx-pack --ignore "dist,*.log,tmp/*" .
-./ctx-pack --version
-./ctx-pack --help
 ```
 
 ---
@@ -35,42 +43,34 @@ go build -o ctx-pack ./cmd/ctx-pack
 
 `ctx-pack` aims to be a small, reliable, and delightful tool for preparing context for AI systems. It should feel intentional, fast, and well-engineered.
 
-### Core Goals
-- Clean and predictable output
-- Strong respect for ignore rules
-- Useful metadata (token estimates, structure, etc.)
-- Excellent CLI experience
-- Easy to install and use
-
 ---
 
 ## Roadmap
 
 ### Done
 - [x] Basic CLI
-- [x] Safe directory walker (no symlink following by default)
-- [x] Safety limits (max depth, max files)
+- [x] Safe directory walker
+- [x] Safety limits (depth, files, file size)
 - [x] `.gitignore` support
-- [x] Custom ignore patterns (`--ignore`)
+- [x] Custom ignore patterns
+- [x] Binary file detection
+- [x] Markdown output (tree + contents)
 
 ### Next
-- [ ] Clean file tree + content output (Markdown)
-- [ ] Max file size limit
-- [ ] Binary file detection
-
-### Later
-- Approximate token counting
-- JSON output mode
-- Better formatting / tree view
+- [ ] Better tree formatting
+- [ ] Approximate token counting
+- [ ] JSON output mode
+- [ ] `.ctxignore` support (in addition to `.gitignore`)
 
 ---
 
 ## Safety Principles
 
-- **Read-only**: Never writes or modifies any files
-- **No symlink following** by default
-- Hard limits on depth and number of files
-- Clear error messages
+- **Read-only** on the scanned directory
+- No symlink following by default
+- Hard limits on depth, number of files, and file size
+- Binary files are detected and skipped
+- Clear feedback on what was skipped / truncated
 
 ---
 
@@ -78,9 +78,10 @@ go build -o ctx-pack ./cmd/ctx-pack
 
 ```
 ctx-pack/
-├── cmd/ctx-pack/         # CLI entry point
+├── cmd/ctx-pack/          # CLI entry point
 ├── internal/
-│   └── walker/           # Safe directory walking + gitignore
+│   ├── walker/            # Safe walking + gitignore
+│   └── pack/              # Content reading + Markdown generation
 ├── go.mod
 ├── Makefile
 └── README.md
