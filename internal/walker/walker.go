@@ -32,7 +32,7 @@ type Result struct {
 // Walk performs a safe, read-only directory walk.
 // It never follows symlinks unless explicitly allowed.
 // It never writes anything.
-// It respects .gitignore in the root + any extra patterns.
+// It respects .gitignore and .ctxignore in the root + any extra patterns.
 func Walk(opts Options) (*Result, error) {
 	root, err := filepath.Abs(opts.Root)
 	if err != nil {
@@ -47,16 +47,16 @@ func Walk(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("root is not a directory: %s", root)
 	}
 
-	// Build ignore matcher
+	// Build ignore matcher from multiple sources
 	var lines []string
 
-	// Load .gitignore from the root if it exists
-	gitignorePath := filepath.Join(root, ".gitignore")
-	if data, err := os.ReadFile(gitignorePath); err == nil {
-		lines = append(lines, strings.Split(string(data), "\n")...)
-	}
+	// 1. Load .gitignore from the root if it exists
+	loadIgnoreFile(filepath.Join(root, ".gitignore"), &lines)
 
-	// Add any extra patterns
+	// 2. Load .ctxignore from the root if it exists (project-specific for ctx-pack)
+	loadIgnoreFile(filepath.Join(root, ".ctxignore"), &lines)
+
+	// 3. Add any extra patterns passed via CLI
 	lines = append(lines, opts.IgnorePatterns...)
 
 	var ign *ignore.GitIgnore
@@ -97,7 +97,7 @@ func Walk(opts Options) (*Result, error) {
 			return nil
 		}
 
-		// Respect .gitignore + extra patterns
+		// Respect all ignore sources
 		// go-gitignore works best with forward slashes
 		relSlash := filepath.ToSlash(rel)
 		if ign != nil && ign.MatchesPath(relSlash) {
@@ -138,4 +138,18 @@ func Walk(opts Options) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+// loadIgnoreFile appends non-empty lines from a file into the lines slice.
+func loadIgnoreFile(path string, lines *[]string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return // file doesn't exist or can't be read — that's fine
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			*lines = append(*lines, line)
+		}
+	}
 }
