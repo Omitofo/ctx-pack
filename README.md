@@ -26,6 +26,10 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 # Build
 go build -o ctx-pack ./cmd/ctx-pack
 
+# Run tests
+make test
+# or: go test ./...
+
 # Markdown (default)
 ./ctx-pack .
 ./ctx-pack --output context.md .
@@ -71,9 +75,12 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Approximate token counting
 - [x] JSON output mode
 - [x] Hierarchical tree formatting
+- [x] Basic tests
+- [x] Improved error messages & UX feedback
 
 ### Next
-- Polish: tests, LICENSE, better error messages, version bump
+- LICENSE (MIT)
+- Version bump / release readiness
 
 ---
 
