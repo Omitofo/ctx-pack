@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -154,19 +155,9 @@ func ToMarkdown(r *Result) string {
 	b.WriteString("\n> Token count is an approximation (≈ characters / 4).\n\n")
 	b.WriteString("---\n\n")
 
-	// File tree
+	// Hierarchical file tree
 	b.WriteString("## File Tree\n\n```\n")
-	for _, f := range r.Files {
-		line := f.Path
-		if f.Binary {
-			line += "  (binary)"
-		} else if f.Skipped {
-			line += "  (skipped - too large)"
-		} else if f.Tokens > 0 {
-			line += fmt.Sprintf("  (~%d tokens)", f.Tokens)
-		}
-		b.WriteString(line + "\n")
-	}
+	b.WriteString(renderTree(r.Files))
 	b.WriteString("```\n\n")
 
 	// File contents
@@ -227,5 +218,96 @@ func detectLang(path string) string {
 		return "sql"
 	default:
 		return ""
+	}
+}
+
+// treeNode is used to build a hierarchical view of files.
+type treeNode struct {
+	name     string
+	entry    *FileEntry // non-nil only for files
+	children map[string]*treeNode
+}
+
+func newTreeNode(name string) *treeNode {
+	return &treeNode{
+		name:     name,
+		children: make(map[string]*treeNode),
+	}
+}
+
+// renderTree builds a hierarchical tree string from the file list.
+func renderTree(files []FileEntry) string {
+	if len(files) == 0 {
+		return "(no files)\n"
+	}
+
+	root := newTreeNode("")
+
+	for i := range files {
+		f := &files[i]
+		parts := strings.Split(filepath.ToSlash(f.Path), "/")
+		current := root
+
+		for i, part := range parts {
+			if part == "" {
+				continue
+			}
+			child, ok := current.children[part]
+			if !ok {
+				child = newTreeNode(part)
+				current.children[part] = child
+			}
+			// Attach the FileEntry only on the final part (the file itself)
+			if i == len(parts)-1 {
+				child.entry = f
+			}
+			current = child
+		}
+	}
+
+	var b strings.Builder
+	renderNode(&b, root, "", true)
+	return b.String()
+}
+
+func renderNode(b *strings.Builder, node *treeNode, prefix string, isRoot bool) {
+	// Collect and sort children for stable output
+	names := make([]string, 0, len(node.children))
+	for name := range node.children {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for i, name := range names {
+		child := node.children[name]
+		isLast := i == len(names)-1
+
+		connector := "├── "
+		nextPrefix := prefix + "│   "
+		if isLast {
+			connector = "└── "
+			nextPrefix = prefix + "    "
+		}
+
+		line := prefix + connector + name
+
+		// Annotate files
+		if child.entry != nil {
+			switch {
+			case child.entry.Binary:
+				line += "  (binary)"
+			case child.entry.Skipped:
+				line += "  (skipped - too large)"
+			case child.entry.Tokens > 0:
+				line += fmt.Sprintf("  (~%d tokens)", child.entry.Tokens)
+			}
+		}
+
+		b.WriteString(line + "\n")
+
+		// Recurse into directories (nodes that have children)
+		if len(child.children) > 0 {
+			renderNode(b, child, nextPrefix, false)
+		}
 	}
 }
