@@ -11,10 +11,11 @@ Turn any project directory into high-quality, ready-to-use context. Respects `.g
 ## Current Capabilities
 
 - Safe recursive directory walking
+- **Respects `.gitignore`** automatically
+- Extra ignore patterns via `--ignore`
 - Read-only (never modifies anything)
 - Does **not** follow symlinks by default
 - Configurable depth and file count limits (safety)
-- Basic CLI with flags
 
 ```bash
 # Build
@@ -23,6 +24,7 @@ go build -o ctx-pack ./cmd/ctx-pack
 # Examples
 ./ctx-pack .
 ./ctx-pack --max-depth 3 --max-files 1000 ./my-project
+./ctx-pack --ignore "dist,*.log,tmp/*" .
 ./ctx-pack --version
 ./ctx-pack --help
 ```
@@ -48,10 +50,10 @@ go build -o ctx-pack ./cmd/ctx-pack
 - [x] Basic CLI
 - [x] Safe directory walker (no symlink following by default)
 - [x] Safety limits (max depth, max files)
+- [x] `.gitignore` support
+- [x] Custom ignore patterns (`--ignore`)
 
 ### Next
-- [ ] `.gitignore` support
-- [ ] Custom ignore patterns
 - [ ] Clean file tree + content output (Markdown)
 - [ ] Max file size limit
 - [ ] Binary file detection
@@ -78,7 +80,7 @@ go build -o ctx-pack ./cmd/ctx-pack
 ctx-pack/
 ├── cmd/ctx-pack/         # CLI entry point
 ├── internal/
-│   └── walker/           # Safe directory walking
+│   └── walker/           # Safe directory walking + gitignore
 ├── go.mod
 ├── Makefile
 └── README.md
