@@ -13,12 +13,11 @@ import (
 // Options controls how the walker behaves.
 // All limits exist for safety.
 type Options struct {
-	Root           string // directory to walk
-	MaxDepth       int    // 0 = unlimited
-	MaxFiles       int    // 0 = unlimited
-	FollowSymlinks bool   // default false (safer)
-	// IgnorePatterns are additional gitignore-style patterns (optional)
-	IgnorePatterns []string
+	Root           string   // directory to walk
+	MaxDepth       int      // 0 = unlimited
+	MaxFiles       int      // 0 = unlimited
+	FollowSymlinks bool     // default false (safer)
+	IgnorePatterns []string // additional gitignore-style patterns
 }
 
 // Result holds the outcome of a walk.
@@ -48,30 +47,21 @@ func Walk(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("root is not a directory: %s", root)
 	}
 
-	// Load .gitignore from the root (if it exists)
-	var ign *ignore.GitIgnore
+	// Build ignore matcher
+	var lines []string
+
+	// Load .gitignore from the root if it exists
 	gitignorePath := filepath.Join(root, ".gitignore")
-	if _, err := os.Stat(gitignorePath); err == nil {
-		ign, err = ignore.CompileIgnoreFile(gitignorePath)
-		if err != nil {
-			return nil, fmt.Errorf("parse .gitignore: %w", err)
-		}
-	} else {
-		// No .gitignore — create an empty one so we can still add extra patterns
-		ign = ignore.CompileIgnoreLines()
+	if data, err := os.ReadFile(gitignorePath); err == nil {
+		lines = append(lines, strings.Split(string(data), "\n")...)
 	}
 
-	// Add any extra patterns passed by the caller
-	if len(opts.IgnorePatterns) > 0 {
-		extra := ignore.CompileIgnoreLines(opts.IgnorePatterns...)
-		// We re-compile with both sources for simplicity
-		lines := []string{}
-		if data, err := os.ReadFile(gitignorePath); err == nil {
-			lines = append(lines, strings.Split(string(data), "\n")...)
-		}
-		lines = append(lines, opts.IgnorePatterns...)
+	// Add any extra patterns
+	lines = append(lines, opts.IgnorePatterns...)
+
+	var ign *ignore.GitIgnore
+	if len(lines) > 0 {
 		ign = ignore.CompileIgnoreLines(lines...)
-		_ = extra // silence unused in case of future changes
 	}
 
 	result := &Result{
@@ -107,8 +97,8 @@ func Walk(opts Options) (*Result, error) {
 			return nil
 		}
 
-		// Respect .gitignore (and extra patterns)
-		// Note: go-gitignore expects forward slashes
+		// Respect .gitignore + extra patterns
+		// go-gitignore works best with forward slashes
 		relSlash := filepath.ToSlash(rel)
 		if ign != nil && ign.MatchesPath(relSlash) {
 			if d.IsDir() {
